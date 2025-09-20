@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shift Hours Tracker</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 1.5rem;
+            box-sizing: border-box;
+        }
+        .container {
+            width: 100%;
+            max-width: 400px;
+        }
+        .hours-input {
+            width: 100%;
+            text-align: right;
+            border: none;
+            background-color: #d1d5db;
+            color: #1f2937;
+            font-size: 1rem;
+            padding: 0.5rem 0.75rem;
+            transition: background-color 0.2s;
+            border-radius: 0.5rem;
+            box-shadow: inset 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+            -moz-appearance: textfield;
+        }
+        .hours-input::-webkit-outer-spin-button,
+        .hours-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .hours-input:hover {
+            background-color: #9ca3af;
+        }
+        .hours-input:focus {
+            outline: none;
+            background-color: #9ca3af;
+        }
+        .status-box {
+            transition: background-color 0.5s ease-in-out;
+        }
+        .report-content {
+            font-family: 'Inter', sans-serif;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgb(0,0,0);
+            background-color: rgba(0,0,0,0.4);
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+        }
+        .modal-content {
+            background-color: #fff;
+            padding: 24px;
+            border-radius: 12px;
+            max-width: 90%;
+            width: 500px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            text-align: center;
+        }
+        .calendar-day-header {
+            display: none;
+        }
+        .day-cell {
+            background-color: #e5e7eb;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            box-shadow: inset 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        #calendar-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .day-cell-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+        .date-and-day {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            min-width: 60px;
+        }
+        .day-name {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #6b7280;
+        }
+        .day-date {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        .hours-select {
+            background-color: #d1d5db;
+            color: #1f2937;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.5rem;
+            border: none;
+            font-size: 1rem;
+            cursor: pointer;
+            box-shadow: inset 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+            transition: background-color 0.2s;
+        }
+        .hours-select:hover {
+            background-color: #9ca3af;
+        }
+        .hours-select:focus {
+            outline: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container bg-white p-8 rounded-3xl shadow-2xl">
+        <h1 class="text-2xl font-bold text-center text-gray-800 mb-2">Shift Tracker</h1>
+        <p class="text-center text-sm text-gray-500 mb-6">Enter your details and daily hours below.</p>
+
+        <!-- Personal and Company Details -->
+        <div class="mb-6">
+            <div class="mb-4">
+                <label for="fullName" class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                <input type="text" id="fullName" placeholder="e.g., John Smith" class="block w-full rounded-lg bg-gray-200 border-gray-300 px-3 py-2 text-gray-900 focus:ring-teal-500 focus:border-teal-500 sm:text-sm">
+            </div>
+            <div class="mb-4">
+                <label for="company" class="block text-sm font-medium text-gray-700 mb-1">Company</label>
+                <input type="text" id="company" placeholder="e.g., ABC Pty Ltd" class="block w-full rounded-lg bg-gray-200 border-gray-300 px-3 py-2 text-gray-900 focus:ring-teal-500 focus:border-teal-500 sm:text-sm">
+            </div>
+            <div>
+                <label for="jobRole" class="block text-sm font-medium text-gray-700 mb-1">Job Role</label>
+                <input type="text" id="jobRole" placeholder="e.g., Waitstaff" class="block w-full rounded-lg bg-gray-200 border-gray-300 px-3 py-2 text-gray-900 focus:ring-teal-500 focus:border-teal-500 sm:text-sm">
+            </div>
+        </div>
+        
+        <hr class="my-6 border-gray-300">
+
+        <!-- Hourly Rate Input with Decimal Button -->
+        <div class="mb-6">
+            <label for="hourlyRate" class="block text-sm font-medium text-gray-700 mb-1">AUD per hour</label>
+            <div class="flex items-center space-x-2">
+                <div class="relative rounded-lg shadow-sm flex-1">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <span class="text-gray-500 sm:text-sm">
+                            $
+                        </span>
+                    </div>
+                    <input type="text" id="hourlyRate" placeholder="e.g., 25.80" class="block w-full rounded-lg bg-gray-200 border-gray-300 pl-7 pr-3 py-2 text-gray-900 focus:ring-teal-500 focus:border-teal-500 sm:text-sm">
+                </div>
+                <button id="addDecimalBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg shadow-md transition-colors text-xl">.</button>
+            </div>
+        </div>
+
+        <hr class="my-6 border-gray-300">
+
+        <!-- Weekly Navigation -->
+        <div class="flex justify-between items-center mb-4">
+            <button id="prevWeekBtn" class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded-full shadow-lg transition-transform transform hover:scale-105">Prev</button>
+            <span id="currentWeekRange" class="text-sm sm:text-lg font-bold text-gray-800 text-center"></span>
+            <button id="nextWeekBtn" class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded-full shadow-lg transition-transform transform hover:scale-105">Next</button>
+        </div>
+
+        <!-- Calendar Grid (Weekly) -->
+        <div class="bg-gray-100 p-4 rounded-xl shadow-inner mb-4">
+            <div id="calendar-grid">
+                <!-- Weekly days will be generated here by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Reset Week Button -->
+        <div class="mb-6">
+            <button id="resetWeekBtn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg w-full transition-transform transform hover:scale-105">Reset Week</button>
+        </div>
+
+        <hr class="my-6 border-gray-300">
+
+        <!-- Totals Display -->
+        <div class="bg-gray-100 p-4 rounded-xl text-center shadow-inner">
+            <div id="statusBox" class="status-box p-3 mb-4 rounded-xl text-white font-semibold shadow-md">
+                <p id="statusText" class="text-xl">Ready to track!</p>
+            </div>
+            <div class="flex justify-between items-center mt-2">
+                <span class="text-sm font-medium text-gray-700">Total Weekly Hours:</span>
+                <span id="totalWeeklyHours" class="text-xl font-bold text-gray-800">0</span>
+            </div>
+            <div class="flex justify-between items-center mt-2">
+                <span class="text-sm font-medium text-gray-700">Total Weekly Earnings (AUD):</span>
+                <span id="totalWeeklyEarningsAUD" class="text-xl font-bold text-gray-800">$0.00</span>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="mt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <button id="showReceiptBtn" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg flex-1 transition-transform transform hover:scale-105">Show Receipt</button>
+            <button id="aiAssistantBtn" class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg flex-1 transition-transform transform hover:scale-105">✨ AI Assistant</button>
+        </div>
+        <button id="taxInfoBtn" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-6 mt-4 rounded-lg shadow-lg w-full transition-transform transform hover:scale-105">Tax Info</button>
+
+        <!-- Receipt Modal -->
+        <div id="receipt-modal" class="modal">
+            <div class="modal-content">
+                <div id="report-content" class="report-content">
+                    <h1 class="text-center font-bold text-2xl mb-4">Shift Hours Report</h1>
+                    <div class="text-center mb-6 text-sm text-gray-700">
+                        <p>For the week of <span id="reportWeekRange"></span></p>
+                        <p id="reportFullName" class="font-semibold mt-2"></p>
+                        <p><span id="reportJobRole"></span> at <span id="reportCompany"></span></p>
+                    </div>
+                    <div class="mb-4">
+                        <p class="font-semibold">Hourly Rate: <span id="reportHourlyRate"></span></p>
+                    </div>
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr>
+                                <th class="border-b-2 border-gray-300 p-2">Date</th>
+                                <th class="border-b-2 border-gray-300 p-2 text-right">Hours</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportHoursTable">
+                            <!-- Data will be populated here -->
+                        </tbody>
+                    </table>
+                    <div class="mt-6 text-right">
+                        <p class="font-bold">Total Hours: <span id="reportTotalHours"></span></p>
+                        <p class="font-bold">Total Earnings: <span id="reportTotalEarnings"></span></p>
+                    </div>
+                </div>
+                <button id="closeReceiptBtn" class="mt-6 bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105">Close</button>
+            </div>
+        </div>
+
+        <!-- Tax Info Modal -->
+        <div id="tax-modal" class="modal">
+            <div class="modal-content">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold text-gray-800">Tax Deductions Information</h2>
+                    <button id="close-modal-btn" class="text-gray-500 hover:text-gray-700 text-2xl leading-none">&times;</button>
+                </div>
+                <p class="text-sm text-gray-700 mb-4">
+                    For students on a visa in Australia with a Tax File Number (TFN), you may be able to claim deductions for work-related expenses. Common deductions can include:
+                </p>
+                <ul class="list-disc list-inside text-sm text-gray-700 mb-4 text-left">
+                    <li>Work-related travel (e.g., to different work locations)</li>
+                    <li>Protective clothing or uniforms</li>
+                    <li>Tools, equipment, or other assets used for work</li>
+                    <li>Education expenses related to your job</li>
+                </ul>
+                <p class="text-xs text-orange-500 font-semibold mb-4">
+                    Disclaimer: This is general information only and not professional tax advice. You should consult the Australian Taxation Office (ATO) website or a registered tax agent for personalized advice on your specific circumstances.
+                </p>
+                <a href="https://www.ato.gov.au/individuals/income-and-deductions/deductions-you-can-claim/" target="_blank" class="block text-center bg-teal-500 hover:bg-teal-600 text-white py-2 rounded-lg transition-colors">
+                    Visit ATO Website
+                </a>
+            </div>
+        </div>
+
+        <!-- Weekly Hours Warning Modal -->
+        <div id="warning-modal" class="modal">
+            <div class="modal-content">
+                <h2 id="warning-message" class="text-xl font-bold text-gray-800 mb-4"></h2>
+                <button id="close-warning-btn" class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-6 rounded-full shadow-lg transition-transform transform hover:scale-105">Got it!</button>
+            </div>
+        </div>
+
+        <!-- Reset Confirmation Modal -->
+        <div id="reset-modal" class="modal">
+            <div class="modal-content">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">Are you sure?</h2>
+                <p class="text-sm text-gray-700 mb-6">This will reset all hours for the current week.</p>
+                <div class="flex justify-center gap-4">
+                    <button id="confirmResetBtn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105">Yes, Reset</button>
+                    <button id="cancelResetBtn" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105">Cancel</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- AI Assistant Modal -->
+        <div id="ai-modal" class="modal">
+            <div class="modal-content">
+                <div class="flex justify-end mb-4">
+                    <button id="close-ai-modal-btn" class="text-gray-500 hover:text-gray-700 text-2xl leading-none">&times;</button>
+                </div>
+                <h2 class="text-xl font-bold text-gray-800 mb-4">AI Assistant</h2>
+                <p class="text-sm text-gray-700 mb-6">Choose an option below to get AI-powered insights.</p>
+                <div class="flex flex-col gap-4 mb-6">
+                    <button id="resumeBlurbBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-transform transform hover:scale-105">✨ Generate Resume Blurb</button>
+                    <button id="taxTipsBtn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-transform transform hover:scale-105">✨ Get Tax Tips</button>
+                </div>
+                <div class="bg-gray-100 p-4 rounded-xl shadow-inner text-left min-h-[100px] flex items-center justify-center relative">
+                    <p id="aiOutput" class="text-gray-800 text-sm"></p>
+                    <div id="loadingIndicator" class="hidden">
+                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                    </div>
+                </div>
+                <button id="copyToClipboardBtn" class="hidden mt-4 bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg w-full transition-transform transform hover:scale-105">Copy to Clipboard</button>
+            </div>
+        </div>
+
+    </div>
+    <script>
+        // DOM elements
+        const fullNameInput = document.getElementById('fullName');
+        const companyInput = document.getElementById('company');
+        const jobRoleInput = document.getElementById('jobRole');
+        const hourlyRateInput = document.getElementById('hourlyRate');
+        const addDecimalBtn = document.getElementById('addDecimalBtn');
+        const prevWeekBtn = document.getElementById('prevWeekBtn');
+        const nextWeekBtn = document.getElementById('nextWeekBtn');
+        const resetWeekBtn = document.getElementById('resetWeekBtn');
+        const currentWeekRangeSpan = document.getElementById('currentWeekRange');
+        const calendarGrid = document.getElementById('calendar-grid');
+        const statusBox = document.getElementById('statusBox');
+        const statusText = document.getElementById('statusText');
+        const totalWeeklyHoursSpan = document.getElementById('totalWeeklyHours');
+        const totalWeeklyEarningsAUDSpan = document.getElementById('totalWeeklyEarningsAUD');
+        const showReceiptBtn = document.getElementById('showReceiptBtn');
+        const taxInfoBtn = document.getElementById('taxInfoBtn');
+        const taxModal = document.getElementById('tax-modal');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const warningModal = document.getElementById('warning-modal');
+        const warningMessage = document.getElementById('warning-message');
+        const closeWarningBtn = document.getElementById('close-warning-btn');
+        const receiptModal = document.getElementById('receipt-modal');
+        const closeReceiptBtn = document.getElementById('closeReceiptBtn');
+        const resetModal = document.getElementById('reset-modal');
+        const confirmResetBtn = document.getElementById('confirmResetBtn');
+        const cancelResetBtn = document.getElementById('cancelResetBtn');
+        const aiAssistantBtn = document.getElementById('aiAssistantBtn');
+        const aiModal = document.getElementById('ai-modal');
+        const closeAiModalBtn = document.getElementById('close-ai-modal-btn');
+        const resumeBlurbBtn = document.getElementById('resumeBlurbBtn');
+        const taxTipsBtn = document.getElementById('taxTipsBtn');
+        const aiOutput = document.getElementById('aiOutput');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const copyToClipboardBtn = document.getElementById('copyToClipboardBtn');
+
+        const WEEKLY_HOURS_LIMIT = 24;
+        const WARNING_THRESHOLD = 18;
+        const GREEN_THRESHOLD = 16;
+        
+        let currentWeekStart = new Date();
+        currentWeekStart.setDate(currentWeekStart.getDate() - (currentWeekStart.getDay() === 0 ? 6 : currentWeekStart.getDay() - 1));
+        
+        // Gemini API Configuration
+        const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=";
+        const API_KEY = ""; // Canvas will provide this
+        
+        // --- CORE APPLICATION LOGIC ---
+        function getYYYYMMDD(date) {
+            const year = date.getFullYear();
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const day = date.getDate().toString().padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+        
+        function loadData() {
+            return JSON.parse(localStorage.getItem('shift_tracker_data')) || {
+                fullName: '',
+                company: '',
+                jobRole: '',
+                hours: {},
+                hourlyRate: ''
+            };
+        }
+        
+        function saveData(data) {
+            localStorage.setItem('shift_tracker_data', JSON.stringify(data));
+        }
+        
+        function calculateTotals() {
+            const data = loadData();
+            const hourlyRate = parseFloat(data.hourlyRate) || 0;
+            const hoursData = data.hours || {};
+            
+            let totalWeeklyHours = 0;
+            for (let i = 0; i < 7; i++) {
+                const date = new Date(currentWeekStart);
+                date.setDate(currentWeekStart.getDate() + i);
+                const dateKey = getYYYYMMDD(date);
+                totalWeeklyHours += parseFloat(hoursData[dateKey]) || 0;
+            }
+            const totalWeeklyEarningsAUD = totalWeeklyHours * hourlyRate;
+            return { totalWeeklyHours, totalWeeklyEarningsAUD };
+        }
+
+        function updateUI() {
+            const data = loadData();
+            const { totalWeeklyHours, totalWeeklyEarningsAUD } = calculateTotals();
+
+            fullNameInput.value = data.fullName;
+            companyInput.value = data.company;
+            jobRoleInput.value = data.jobRole;
+            hourlyRateInput.value = data.hourlyRate;
+            
+            totalWeeklyHoursSpan.textContent = totalWeeklyHours.toFixed(1);
+            totalWeeklyEarningsAUDSpan.textContent = `$${totalWeeklyEarningsAUD.toFixed(2)}`;
+            
+            updateStatusBox(totalWeeklyHours);
+            checkWarning(totalWeeklyHours);
+        }
+
+        function generateCalendar() {
+            calendarGrid.innerHTML = '';
+            
+            const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+            const startOfWeek = new Date(currentWeekStart);
+            const endOfWeek = new Date(currentWeekStart);
+            endOfWeek.setDate(currentWeekStart.getDate() + 6);
+            
+            const startDateString = `${startOfWeek.getDate()} ${startOfWeek.toLocaleString('default', { month: 'short' })}`;
+            const endDateString = `${endOfWeek.getDate()} ${endOfWeek.toLocaleString('default', { month: 'short' })}`;
+            currentWeekRangeSpan.textContent = `${startDateString} - ${endDateString}, ${startOfWeek.getFullYear()}`;
+
+            const data = loadData();
+            
+            for (let i = 0; i < 7; i++) {
+                const dayDate = new Date(currentWeekStart);
+                dayDate.setDate(currentWeekStart.getDate() + i);
+                const dateKey = getYYYYMMDD(dayDate);
+                const storedHours = parseFloat(data.hours[dateKey]) || 0;
+
+                const dayDiv = document.createElement('div');
+                dayDiv.className = 'day-cell';
+                
+                const dayContent = document.createElement('div');
+                dayContent.className = 'day-cell-content';
+                
+                const dateAndDay = document.createElement('div');
+                dateAndDay.className = 'date-and-day';
+                dateAndDay.innerHTML = `<span class="day-name">${weekDays[i]}</span><span class="day-date">${dayDate.getDate()}</span>`;
+                
+                const hoursInputContainer = document.createElement('div');
+                hoursInputContainer.className = 'flex flex-col items-end';
+
+                const selectEl = document.createElement('select');
+                selectEl.className = 'hours-select';
+                selectEl.dataset.dateKey = dateKey;
+                selectEl.innerHTML = `
+                    <option value="0">Day off</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
+                    <option value="9">9</option>
+                `;
+                
+                selectEl.value = storedHours.toString();
+
+                selectEl.addEventListener('change', (event) => {
+                    const data = loadData();
+                    if (!data.hours) data.hours = {};
+                    const selectedHours = parseFloat(event.target.value);
+                    data.hours[dateKey] = selectedHours;
+                    saveData(data);
+                    updateUI();
+                });
+                
+                hoursInputContainer.appendChild(selectEl);
+                
+                dayContent.appendChild(dateAndDay);
+                dayContent.appendChild(hoursInputContainer);
+                
+                dayDiv.appendChild(dayContent);
+                calendarGrid.appendChild(dayDiv);
+            }
+
+            updateUI();
+        }
+
+        function updateStatusBox(totalHours) {
+            statusBox.classList.remove('bg-orange-500', 'bg-teal-500', 'bg-gray-400');
+            if (totalHours === 0) {
+                statusBox.classList.add('bg-gray-400');
+                statusText.textContent = "Ready to track!";
+            } else if (totalHours < GREEN_THRESHOLD) {
+                statusBox.classList.add('bg-orange-500');
+                statusText.textContent = `You've worked ${totalHours} hours. Keep going!`;
+            } else {
+                statusBox.classList.add('bg-teal-500');
+                statusText.textContent = `Great job! You've worked ${totalHours} hours.`;
+            }
+        }
+        
+        function checkWarning(totalHours) {
+            const now = new Date();
+            const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1));
+            
+            if (currentWeekStart.getTime() !== startOfWeek.getTime()) return;
+            
+            if (totalHours >= WARNING_THRESHOLD && totalHours < WEEKLY_HOURS_LIMIT) {
+                const hoursRemaining = WEEKLY_HOURS_LIMIT - totalHours;
+                warningMessage.textContent = `You only have ${hoursRemaining.toFixed(1)} hours left this week to comply with your visa conditions.`;
+                warningModal.style.display = 'flex';
+            } else if (totalHours >= WEEKLY_HOURS_LIMIT) {
+                warningMessage.textContent = `Warning: You have reached the maximum weekly hours (${WEEKLY_HOURS_LIMIT}) allowed by your visa.`;
+                warningModal.style.display = 'flex';
+            }
+        }
+
+        async function callGeminiAPI(prompt) {
+            aiOutput.textContent = '';
+            loadingIndicator.classList.remove('hidden');
+            copyToClipboardBtn.classList.add('hidden');
+
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+            };
+            
+            let retryCount = 0;
+            const maxRetries = 3;
+            const baseDelay = 1000;
+
+            while (retryCount < maxRetries) {
+                try {
+                    const response = await fetch(API_URL + API_KEY, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    
+                    if (!response.ok) {
+                        if (response.status === 429) { // Too Many Requests
+                            const delay = baseDelay * Math.pow(2, retryCount);
+                            retryCount++;
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                            continue;
+                        } else {
+                            throw new Error(`API Error: ${response.statusText}`);
+                        }
+                    }
+
+                    const result = await response.json();
+                    const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                    loadingIndicator.classList.add('hidden');
+                    if (text) {
+                        aiOutput.textContent = text;
+                        copyToClipboardBtn.classList.remove('hidden');
+                    } else {
+                        aiOutput.textContent = 'Sorry, something went wrong. Please try again.';
+                    }
+                    return; // Exit the loop on success
+                } catch (error) {
+                    loadingIndicator.classList.add('hidden');
+                    aiOutput.textContent = `Error: ${error.message}`;
+                    console.error('Fetch error:', error);
+                    return;
+                }
+            }
+        }
+        
+        // --- EVENT LISTENERS ---
+        fullNameInput.addEventListener('input', () => {
+            const data = loadData();
+            data.fullName = fullNameInput.value;
+            saveData(data);
+        });
+
+        companyInput.addEventListener('input', () => {
+            const data = loadData();
+            data.company = companyInput.value;
+            saveData(data);
+        });
+        
+        jobRoleInput.addEventListener('input', () => {
+            const data = loadData();
+            data.jobRole = jobRoleInput.value;
+            saveData(data);
+        });
+
+        prevWeekBtn.addEventListener('click', () => {
+            currentWeekStart.setDate(currentWeekStart.getDate() - 7);
+            generateCalendar();
+        });
+
+        nextWeekBtn.addEventListener('click', () => {
+            currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+            generateCalendar();
+        });
+
+        hourlyRateInput.addEventListener('input', (event) => {
+            const data = loadData();
+            const enteredRate = parseFloat(event.target.value.replace(',', '.')) || '';
+            data.hourlyRate = enteredRate;
+            saveData(data);
+            updateUI();
+        });
+
+        addDecimalBtn.addEventListener('click', () => {
+            if (!hourlyRateInput.value.includes('.')) {
+                hourlyRateInput.value += '.';
+            }
+            hourlyRateInput.focus();
+        });
+
+        resetWeekBtn.addEventListener('click', () => {
+            resetModal.style.display = 'flex';
+        });
+
+        confirmResetBtn.addEventListener('click', () => {
+            const data = loadData();
+            if (!data.hours) data.hours = {};
+            for (let i = 0; i < 7; i++) {
+                const date = new Date(currentWeekStart);
+                date.setDate(currentWeekStart.getDate() + i);
+                const dateKey = getYYYYMMDD(date);
+                data.hours[dateKey] = 0;
+            }
+            saveData(data);
+            generateCalendar(); // Regenerate calendar to reflect changes
+            resetModal.style.display = 'none';
+        });
+
+        cancelResetBtn.addEventListener('click', () => {
+            resetModal.style.display = 'none';
+        });
+        
+        taxInfoBtn.addEventListener('click', () => {
+            taxModal.style.display = 'flex';
+        });
+
+        closeModalBtn.addEventListener('click', () => {
+            taxModal.style.display = 'none';
+        });
+        
+        showReceiptBtn.addEventListener('click', () => {
+            const data = loadData();
+            const { totalWeeklyHours, totalWeeklyEarningsAUD } = calculateTotals();
+            const hourlyRate = parseFloat(data.hourlyRate) || 0;
+            const hoursData = data.hours || {};
+            const reportData = [];
+
+            for (let i = 0; i < 7; i++) {
+                const date = new Date(currentWeekStart);
+                date.setDate(currentWeekStart.getDate() + i);
+                const dateKey = getYYYYMMDD(date);
+                const hours = parseFloat(hoursData[dateKey]) || 0;
+                if (hours > 0) {
+                    reportData.push({ date, hours });
+                }
+            }
+            
+            const startOfWeek = new Date(currentWeekStart);
+            const endOfWeek = new Date(currentWeekStart);
+            endOfWeek.setDate(currentWeekStart.getDate() + 6);
+            const startDateString = `${startOfWeek.getDate()} ${startOfWeek.toLocaleString('default', { month: 'short' })}`;
+            const endDateString = `${endOfWeek.getDate()} ${endOfWeek.toLocaleString('default', { month: 'short' })}`;
+
+            document.getElementById('reportWeekRange').textContent = `${startDateString} - ${endDateString}, ${startOfWeek.getFullYear()}`;
+            document.getElementById('reportFullName').textContent = data.fullName;
+            document.getElementById('reportCompany').textContent = data.company;
+            document.getElementById('reportJobRole').textContent = data.jobRole;
+            document.getElementById('reportHourlyRate').textContent = `$${hourlyRate.toFixed(2)}`;
+            document.getElementById('reportTotalHours').textContent = totalWeeklyHours.toFixed(1);
+            document.getElementById('reportTotalEarnings').textContent = `$${totalWeeklyEarningsAUD.toFixed(2)}`;
+
+            const tableBody = document.getElementById('reportHoursTable');
+            tableBody.innerHTML = '';
+            reportData.forEach(item => {
+                const row = document.createElement('tr');
+                const dateCell = document.createElement('td');
+                const hoursCell = document.createElement('td');
+                dateCell.textContent = `${item.date.getDate()}/${item.date.getMonth() + 1}/${item.date.getFullYear()}`;
+                hoursCell.textContent = item.hours.toFixed(1);
+                hoursCell.className = 'p-2 text-right';
+                dateCell.className = 'p-2';
+                row.appendChild(dateCell);
+                row.appendChild(hoursCell);
+                tableBody.appendChild(row);
+            });
+            
+            receiptModal.style.display = 'flex';
+        });
+        
+        closeReceiptBtn.addEventListener('click', () => {
+            receiptModal.style.display = 'none';
+        });
+
+        closeWarningBtn.addEventListener('click', () => {
+            warningModal.style.display = 'none';
+        });
+        
+        aiAssistantBtn.addEventListener('click', () => {
+            aiModal.style.display = 'flex';
+            aiOutput.textContent = '';
+            copyToClipboardBtn.classList.add('hidden');
+        });
+        
+        closeAiModalBtn.addEventListener('click', () => {
+            aiModal.style.display = 'none';
+        });
+
+        resumeBlurbBtn.addEventListener('click', () => {
+            const data = loadData();
+            const jobRole = data.jobRole || 'a job role';
+            const company = data.company || 'a company';
+            const prompt = `Write a single, professional, 20-word description of a person's work experience at a company. The person's job role is "${jobRole}" and the company is "${company}". The description should be suitable for a resume or LinkedIn.`;
+            callGeminiAPI(prompt);
+        });
+
+        taxTipsBtn.addEventListener('click', () => {
+            const data = loadData();
+            const jobRole = data.jobRole || 'a job role';
+            const hourlyRate = parseFloat(data.hourlyRate) || 0;
+            const { totalWeeklyEarningsAUD } = calculateTotals();
+            const prompt = `As an Australian tax advisor, provide a short, single-paragraph summary of potential tax deductions a person could claim. The person's job is "${jobRole}" and their weekly earnings are AUD$${totalWeeklyEarningsAUD.toFixed(2)}. Do not mention specific tax brackets or give financial advice. Keep it general and professional.`;
+            callGeminiAPI(prompt);
+        });
+        
+        copyToClipboardBtn.addEventListener('click', () => {
+            const textToCopy = aiOutput.textContent;
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                const originalText = copyToClipboardBtn.textContent;
+                copyToClipboardBtn.textContent = 'Copied!';
+                setTimeout(() => {
+                    copyToClipboardBtn.textContent = originalText;
+                }, 2000);
+            }).catch(err => {
+                console.error('Could not copy text: ', err);
+            });
+        });
+
+        window.addEventListener('click', (event) => {
+            if (event.target === taxModal) {
+                taxModal.style.display = 'none';
+            }
+            if (event.target === warningModal) {
+                warningModal.style.display = 'none';
+            }
+            if (event.target === resetModal) {
+                resetModal.style.display = 'none';
+            }
+            if (event.target === aiModal) {
+                aiModal.style.display = 'none';
+            }
+        });
+        
+        // Initial setup
+        generateCalendar();
+    </script>
+</body>
+</html>
